@@ -2,7 +2,7 @@ module Pushr
   class MessageApns < Pushr::Message
     POSTFIX = 'apns'
 
-    attr_accessor :type, :app, :device, :badge, :sound, :expiry, :attributes_for_device, :content_available, :priority
+    attr_accessor :type, :app, :device, :badge, :sound, :expiry, :attributes_for_device, :content_available, :priority, :external_id
 
     validates :badge, numericality: true, allow_nil: true
     validates :expiry, numericality: true, presence: true
@@ -10,6 +10,7 @@ module Pushr
     validates :priority, inclusion: { in: [5, 10] }
     validates :content_available, inclusion: { in: [1] }, allow_nil: true
     validate :max_payload_size
+    validate :priority_with_content_available
 
     def alert=(alert)
       if alert.is_a?(Hash)
@@ -52,6 +53,7 @@ module Pushr
       hsh = { type: self.class.to_s, app: app, device: device, alert: alert, badge: badge,
               sound: sound, expiry: expiry, attributes_for_device: attributes_for_device,
               content_available: content_available, priority: priority }
+      hsh[Pushr::Core.external_id_tag] = external_id if external_id
       MultiJson.dump(hsh)
     end
 
@@ -71,6 +73,12 @@ module Pushr
     def max_payload_size
       if payload_size > 256
         errors.add(:payload, 'APN notification cannot be larger than 256 bytes. Try condensing your alert and device attributes.')
+      end
+    end
+
+    def priority_with_content_available
+      if content_available == 1 && priority != 5 && !(alert || badge || sound)
+        errors.add(:priority, 'Priority should be 5 if content_available = 1 and no alert/badge/sound')
       end
     end
   end

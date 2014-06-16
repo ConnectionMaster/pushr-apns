@@ -17,7 +17,7 @@ describe Pushr::MessageApns do
 
   describe 'save' do
     let(:message) do
-      hsh = { app: 'app_name', device: 'a' * 64,  alert: 'message', badge: 1, sound: '1.aiff',
+      hsh = { app: 'app_name', device: 'a' * 64, alert: 'message', badge: 1, sound: '1.aiff',
               expiry: 24 * 60 * 60, attributes_for_device: { key: 'test' }, priority: 10 }
       Pushr::MessageApns.new(hsh)
     end
@@ -31,6 +31,50 @@ describe Pushr::MessageApns do
     end
     it 'should respond to to_message' do
       expect(message.to_message).to be_kind_of(String)
+    end
+
+    context 'content-available: 1' do
+      context 'with no alert/badge/sound' do
+        let(:message) do
+          hsh = { app: 'app_name', device: 'a' * 64, expiry: 24 * 60 * 60, priority: priority, content_available: 1 }
+          Pushr::MessageApns.new(hsh)
+        end
+
+        context 'with priority 5' do
+          let(:priority) { 5 }
+          it 'should have priority 5' do
+            expect(message.save).to eql true
+          end
+        end
+
+        context 'with priority 10' do
+          let(:priority) { 10 }
+          it 'should be invalid if priority 10' do
+            expect(message.save).to eql false
+          end
+        end
+      end
+
+      context 'with alert/badge/sound' do
+        let(:message) do
+          hsh = { app: 'app_name', alert: 'test', device: 'a' * 64, expiry: 24 * 60 * 60, priority: priority, content_available: 1 }
+          Pushr::MessageApns.new(hsh)
+        end
+
+        context 'with priority 5' do
+          let(:priority) { 5 }
+          it 'should have priority 5' do
+            expect(message.save).to eql true
+          end
+        end
+
+        context 'with priority 10' do
+          let(:priority) { 10 }
+          it 'should be valid if priority 10' do
+            expect(message.save).to eql true
+          end
+        end
+      end
     end
   end
 end
