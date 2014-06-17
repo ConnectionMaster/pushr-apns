@@ -2,8 +2,7 @@ module Pushr
   class MessageApns < Pushr::Message
     POSTFIX = 'apns'
 
-    attr_accessor :type, :app, :device, :badge, :sound, :expiry, :attributes_for_device, :content_available, :priority, :external_id
-
+    attr_accessor :device, :badge, :sound, :expiry, :attributes_for_device, :content_available, :priority
     validates :badge, numericality: true, allow_nil: true
     validates :expiry, numericality: true, presence: true
     validates :device, format: { with: /\A[a-z0-9]{64}\z/ }
@@ -49,12 +48,12 @@ module Pushr
       payload.bytesize
     end
 
-    def to_json
+    def to_hash
       hsh = { type: self.class.to_s, app: app, device: device, alert: alert, badge: badge,
               sound: sound, expiry: expiry, attributes_for_device: attributes_for_device,
               content_available: content_available, priority: priority }
       hsh[Pushr::Core.external_id_tag] = external_id if external_id
-      MultiJson.dump(hsh)
+      hsh
     end
 
     private
